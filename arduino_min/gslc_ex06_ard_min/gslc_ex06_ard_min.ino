@@ -124,15 +124,15 @@ bool CbDrawScanner(void* pvGui,void* pvElemRef,gslc_teRedrawType eRedraw)
   gslc_DrawLine(pGui,nX,nY-200,nX,nY+200,GSLC_COL_GRAY_DK2);
   gslc_DrawLine(pGui,nX-200,nY,nX+200,nY,GSLC_COL_GRAY_DK2);
 
-  gslc_DrawFrameRect(pGui,(gslc_tsRect){nX-30,nY-20,60,40},GSLC_COL_BLUE_DK2);
+  gslc_DrawFrameRect(pGui,(gslc_tsRect){(int16_t)(nX-30),(int16_t)(nY-20),60,40},GSLC_COL_BLUE_DK2);
   for (nInd=-5;nInd<=5;nInd++) {
     gslc_DrawLine(pGui,nX,nY,nX+nInd*20,nY+100,GSLC_COL_PURPLE);
   }
 
-  gslc_DrawFillRect(pGui,(gslc_tsRect){nX+1,nY+1,10,10},GSLC_COL_RED_DK2);
-  gslc_DrawFillRect(pGui,(gslc_tsRect){nX+1,nY-10,10,10},GSLC_COL_GREEN_DK2);
-  gslc_DrawFillRect(pGui,(gslc_tsRect){nX-10,nY+1,10,10},GSLC_COL_BLUE_DK2);
-  gslc_DrawFillRect(pGui,(gslc_tsRect){nX-10,nY-10,10,10},GSLC_COL_YELLOW);
+  gslc_DrawFillRect(pGui,(gslc_tsRect){(int16_t)(nX+1),(int16_t)(nY+1),10,10},GSLC_COL_RED_DK2);
+  gslc_DrawFillRect(pGui,(gslc_tsRect){(int16_t)(nX+1),(int16_t)(nY-10),10,10},GSLC_COL_GREEN_DK2);
+  gslc_DrawFillRect(pGui,(gslc_tsRect){(int16_t)(nX-10),(int16_t)(nY+1),10,10},GSLC_COL_BLUE_DK2);
+  gslc_DrawFillRect(pGui,(gslc_tsRect){(int16_t)(nX-10),(int16_t)(nY-10),10,10},GSLC_COL_YELLOW);
 
   // Disable clipping region
   gslc_SetClipRect(pGui,NULL);
@@ -254,8 +254,8 @@ bool InitOverlays()
   gslc_ElemCreateTxt_P(&m_gui,106,E_PG_MAIN,20,170,50,10,"Control:",&m_asFont[1],
           GSLC_COL_ORANGE,GSLC_COL_BLACK,GSLC_COL_BLACK,GSLC_ALIGN_MID_LEFT,false,true);
 
-  gslc_ElemXCheckboxCreate_P(&m_gui,E_ELEM_CHECK1,E_PG_MAIN,80,170,20,20,GSLC_GROUP_ID_NONE,
-          false,GSLCX_CHECKBOX_STYLE_X,GSLC_COL_BLUE_LT2,false);
+  gslc_ElemXCheckboxCreate_P(&m_gui,E_ELEM_CHECK1,E_PG_MAIN,80,170,20,20,GSLC_COL_BLACK,true,
+          GSLC_GROUP_ID_NONE,false,GSLCX_CHECKBOX_STYLE_X,GSLC_COL_BLUE_LT2,false);
 
   gslc_ElemCreateTxt_P(&m_gui,107,E_PG_MAIN,110,170,50,10,"Enable",&m_asFont[1],
           GSLC_COL_GRAY_LT1,GSLC_COL_BLACK,GSLC_COL_BLACK,GSLC_ALIGN_MID_LEFT,false,true);

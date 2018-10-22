@@ -4,7 +4,7 @@
 // - https://www.impulseadventure.com/elec/guislice-gui.html
 // - https://github.com/ImpulseAdventure/GUIslice
 //
-// - Version 0.10.3   (2018/10/06)
+// - Version 0.10.4   (2018/10/13)
 // =======================================================================
 //
 // The MIT License
@@ -1990,7 +1990,17 @@ bool gslc_ElemEvent(void* pvGui,gslc_tsEvent sEvent)
       break;
 
     case GSLC_EVT_TOUCH:
-      #if !defined(DRV_TOUCH_NONE)
+      #if defined(DRV_TOUCH_NONE)
+      // Hide warnings about unused variables when TOUCH is not enabled
+      (void)pvData;
+      (void)pElemRefTracked;
+      (void)pElemTracked;
+      (void)pTouchRec;
+      (void)nRelX;
+      (void)nRelY;
+      (void)eTouch;
+      (void)pfuncXTouch;
+      #else
       // Fetch the parameters
       pElemRef = (gslc_tsElemRef*)(pvScope);
       pTouchRec = (gslc_tsEventTouch*)(pvData);
@@ -2010,7 +2020,7 @@ bool gslc_ElemEvent(void* pvGui,gslc_tsEvent sEvent)
         // Pass in the relative position from corner of element region
         (*pfuncXTouch)(pvGui,(void*)(pElemRefTracked),eTouch,nRelX,nRelY);
       }
-      #endif // !DRV_TOUCH_NONE
+      #endif // DRV_TOUCH_NONE
       break;
 
     case GSLC_EVT_TICK:
@@ -2854,8 +2864,29 @@ void gslc_TrackTouch(gslc_tsGui* pGui,gslc_tsPage* pPage,int16_t nX,int16_t nY,u
 
   gslc_tsEventTouch sEventTouch;
   sEventTouch.eTouch        = eTouch;
-  sEventTouch.nX            = nX;
-  sEventTouch.nY            = nY;
+
+  // Save the coordinates from the touch driver
+  // NOTE: Many display touch drivers return valid coordinates upon a
+  //       TOUCH_UP event, whereas some return zero position coordinates in
+  //       this event (eg. TFT_eSPI with ILI9486). Thus, to ensure that we
+  //       have consistent detection of position when the touch is released,
+  //       we will pass the previous good position in this event (transition
+  //       from TOUCH_DOWN to TOUCH_UP).
+  //
+  //       The position during the TOUCH_UP event is used to determine if a
+  //       touch was released within an element (causing a button selection)
+  //       or outside of it (generally leading to a non-selection).
+  //
+  if (eTouch == GSLC_TOUCH_UP) {
+    // Use previous (good) coordinates from touch driver
+    sEventTouch.nX          = pGui->nTouchLastX;
+    sEventTouch.nY          = pGui->nTouchLastY;
+  } else {
+    // Use most recent coordinate from touch driver
+    sEventTouch.nX          = nX;
+    sEventTouch.nY          = nY;
+  }
+
   void* pvData = (void*)(&sEventTouch);
   gslc_tsEvent sEvent = gslc_EventCreate(pGui,GSLC_EVT_TOUCH,0,(void*)pPage,pvData);
   gslc_PageEvent(pGui,sEvent);
@@ -3057,9 +3088,7 @@ bool gslc_CollectEvent(void* pvGui,gslc_tsEvent sEvent)
     GSLC_DEBUG_PRINT_CONST(ERRSTR_NULL,FUNCSTR);
     return false;
   }
-  gslc_tsGui*     pGui      = (gslc_tsGui*)(pvGui);
   void*           pvScope   = sEvent.pvScope;
-  void*           pvData    = sEvent.pvData;
   gslc_tsCollect* pCollect  = (gslc_tsCollect*)(pvScope);
 
   unsigned        nInd;
@@ -3071,6 +3100,8 @@ bool gslc_CollectEvent(void* pvGui,gslc_tsEvent sEvent)
     #if defined(DRV_TOUCH_NONE)
     return false;
     #else
+    gslc_tsGui*     pGui      = (gslc_tsGui*)(pvGui);
+    void*           pvData    = sEvent.pvData;
     // TOUCH is passed to CollectTouch which determines the element
     // in the collection that should receive the event
     gslc_tsEventTouch* pEventTouch = (gslc_tsEventTouch*)(pvData);

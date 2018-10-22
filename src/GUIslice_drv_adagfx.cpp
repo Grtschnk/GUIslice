@@ -95,9 +95,13 @@
 #elif defined(DRV_TOUCH_ADA_FT6206)
   #include <Wire.h>
   #include "Adafruit_FT6206.h"
-#elif defined(DRV_TOUCH_ADA_SIMPLE )
+#elif defined(DRV_TOUCH_ADA_SIMPLE)
   #include <stdint.h>
   #include <TouchScreen.h>
+#elif defined(DRV_TOUCH_XPT2046)
+  #include <XPT2046_touch.h>
+#elif defined(DRV_TOUCH_HANDLER)
+  #include <GUIslice_th.h>
 #endif
 
 
@@ -122,9 +126,12 @@ extern "C" {
 // ------------------------------------------------------------------------
 #elif defined(DRV_DISP_ADAGFX_ILI9341_STM)
   #if (ADAGFX_SPI_HW) // Use hardware SPI or software SPI (with custom pins)
-    //Adafruit_ILI9341_STM m_disp = Adafruit_ILI9341_STM(ADAGFX_PIN_CS, ADAGFX_PIN_DC, ADAGFX_PIN_RST);
-    // TODO: Resolve why PIN_RST=-1 doesn't give same behavior as 2-param function variant
-    Adafruit_ILI9341_STM m_disp = Adafruit_ILI9341_STM(ADAGFX_PIN_CS, ADAGFX_PIN_DC);
+    //PIN_RST=-1 doesn't give same behavior as 2-param function variant, therefore use different functions
+    #if ADAGFX_PIN_RST==-1
+      Adafruit_ILI9341_STM m_disp = Adafruit_ILI9341_STM(ADAGFX_PIN_CS, ADAGFX_PIN_DC);
+    #else
+      Adafruit_ILI9341_STM m_disp = Adafruit_ILI9341_STM(ADAGFX_PIN_CS, ADAGFX_PIN_DC, ADAGFX_PIN_RST);
+    #endif
   #else
     Adafruit_ILI9341_STM m_disp = Adafruit_ILI9341_STM(ADAGFX_PIN_CS, ADAGFX_PIN_DC, ADAGFX_PIN_MOSI, ADAGFX_PIN_CLK, ADAGFX_PIN_RST, ADAGFX_PIN_MISO);
   #endif
@@ -180,14 +187,22 @@ extern "C" {
     // Always use I2C
     Adafruit_FT6206 m_touch = Adafruit_FT6206();
 // ------------------------------------------------------------------------
-#elif defined(DRV_TOUCH_ADA_SIMPLE )
-  // TODO: Should these be configurable in GUIslice_config.h?
-  #define YP A2   // Must be an analog pin, use "An" notation!
-  #define XM A3   // Must be an analog pin, use "An" notation!
-  #define YM 44   // Can be a digital pin
-  #define XP 45   // Can be a digital pin
-  TouchScreen m_touch = TouchScreen(XP, YP, XM, YM, 300);
-#endif // DRV_TOUCH_ADA_*
+#elif defined(DRV_TOUCH_ADA_SIMPLE)
+  #if defined(ADATOUCH_PIN_XP) && defined(ADATOUCH_PIN_YP) && defined(ADATOUCH_PIN_XM) && defined(ADATOUCH_PIN_YM) && defined(ADATOUCH_RX)
+  TouchScreen m_touch = TouchScreen(ADATOUCH_PIN_XP, ADATOUCH_PIN_YP, ADATOUCH_PIN_XM, ADATOUCH_PIN_YM, ADATOUCH_RX);
+  #else
+  // Config fields not defined, so use default pinout
+  TouchScreen m_touch = TouchScreen(45, A2, A3, 44, 300);
+  #endif // defined(ADATOUCH_*)
+// ------------------------------------------------------------------------
+#elif defined(DRV_TOUCH_XPT2046)
+  // Create an SPI class for XPT2046 access
+  XPT2046_DEFINE_DPICLASS;
+  // Arduino built in XPT2046 touch driver (<XPT2046_touch.h>)
+  XPT2046_touch m_touch(XPT2046_CS, XPT2046_spi); // Chip Select pin, SPI instance
+#elif defined(DRV_TOUCH_HANDLER)
+
+#endif // DRV_TOUCH_*
 
 
 
@@ -229,15 +244,27 @@ bool gslc_DrvInit(gslc_tsGui* pGui)
       // Rotate display from native portrait orientation to landscape
       // NOTE: The touch events in gslc_TDrvGetTouch() will also need rotation
       m_disp.setRotation( pGui->nRotation );
-      pGui->nDispW = ILI9341_TFTHEIGHT;
-      pGui->nDispH = ILI9341_TFTWIDTH;
+      if (pGui->nRotation == 0 || pGui->nRotation == 2) {
+        pGui->nDispW = ILI9341_TFTWIDTH;
+        pGui->nDispH = ILI9341_TFTHEIGHT;
+      }
+      else {
+        pGui->nDispW = ILI9341_TFTHEIGHT;
+        pGui->nDispH = ILI9341_TFTWIDTH;
+      }
 
     #elif defined(DRV_DISP_ADAGFX_ILI9341_8BIT)
       uint16_t identifier = m_disp.readID();
       m_disp.begin(identifier);
       m_disp.setRotation( pGui->nRotation );
-      pGui->nDispW = TFTHEIGHT;
-      pGui->nDispH = TFTWIDTH;
+      if (pGui->nRotation == 0 || pGui->nRotation == 2) {
+        pGui->nDispW = ILI9341_TFTWIDTH;
+        pGui->nDispH = ILI9341_TFTHEIGHT;
+      }
+      else {
+        pGui->nDispW = ILI9341_TFTHEIGHT;
+        pGui->nDispH = ILI9341_TFTWIDTH;
+      }
 
     #elif defined(DRV_DISP_ADAGFX_SSD1306)
       m_disp.begin(SSD1306_SWITCHCAPVCC);
@@ -939,7 +966,7 @@ bool gslc_DrvGetTouch(gslc_tsGui* pGui,int16_t* pnX, int16_t* pnY, uint16_t* pnP
 // Touch Functions (via external touch driver)
 // ------------------------------------------------------------------------
 
-#if defined(DRV_TOUCH_ADA_STMPE610) || defined(DRV_TOUCH_ADA_FT6206) || defined(DRV_TOUCH_ADA_SIMPLE)
+#if defined(DRV_TOUCH_ADA_STMPE610) || defined(DRV_TOUCH_ADA_FT6206) || defined(DRV_TOUCH_ADA_SIMPLE) || defined(DRV_TOUCH_XPT2046) || defined(DRV_TOUCH_HANDLER)
 
 bool gslc_TDrvInitTouch(gslc_tsGui* pGui,const char* acDev) {
   #if defined(DRV_TOUCH_ADA_STMPE610)
@@ -958,6 +985,11 @@ bool gslc_TDrvInitTouch(gslc_tsGui* pGui,const char* acDev) {
     }
   #elif defined(DRV_TOUCH_ADA_SIMPLE)
     return true;
+  #elif defined(DRV_TOUCH_XPT2046)
+    m_touch.begin();
+    return true;
+  #elif defined(DRV_TOUCH_HANDLER)
+    return true;
   #else
     // ERROR: Unsupported driver mode
     GSLC_DEBUG_PRINT("ERROR: TDrvInitTouch() driver not supported yet\n",0);
@@ -969,11 +1001,9 @@ bool gslc_TDrvInitTouch(gslc_tsGui* pGui,const char* acDev) {
 
 bool gslc_TDrvGetTouch(gslc_tsGui* pGui,int16_t* pnX, int16_t* pnY, uint16_t* pnPress)
 {
-  uint16_t  nRawX,nRawY;
-  uint8_t   nRawPress;
 
   #if defined(DRV_TOUCH_NONE)
-  return false;
+    return false;
   #endif
 
   // As the STMPE610 hardware driver doesn't appear to return
@@ -992,6 +1022,9 @@ bool gslc_TDrvGetTouch(gslc_tsGui* pGui,int16_t* pnX, int16_t* pnY, uint16_t* pn
 
   // ----------------------------------------------------------------
   #if defined(DRV_TOUCH_ADA_STMPE610)
+
+  uint16_t  nRawX,nRawY;
+  uint8_t   nRawPress;
 
   if (m_touch.touched()) {
 
@@ -1056,22 +1089,33 @@ bool gslc_TDrvGetTouch(gslc_tsGui* pGui,int16_t* pnX, int16_t* pnY, uint16_t* pn
   // ----------------------------------------------------------------
   #elif defined(DRV_TOUCH_ADA_SIMPLE)
 
+  uint16_t  nRawX,nRawY;
+  uint8_t   nRawPress;
+
   TSPoint p = m_touch.getPoint();
 
-  pinMode(XM, OUTPUT);
-  pinMode(YP, OUTPUT);
+  pinMode(ADATOUCH_PIN_XM, OUTPUT);
+  pinMode(ADATOUCH_PIN_YP, OUTPUT);
 
-  if (p.z > 10 && p.z < 1000) {
+  // Select reasonable touch pressure thresholds
+  // Note that the minimum is not "> 0" as some
+  // displays may produce a (small) non-zero value
+  // when not touched.
+  #if defined(ADATOUCH_PRESS_MIN) && defined(ADATOUCH_PRESS_MAX)
+  if ((p.z > ADATOUCH_PRESS_MIN) && (p.z < ADATOUCH_PRESS_MAX)) {
+  #else
+  if ((p.z > 10) && (p.z < 1000)) {
+  #endif
 
-    nRawX=p.x;
-    nRawY=p.y;
-	nRawPress=p.x;
+    nRawX = p.x;
+    nRawY = p.y;
+    nRawPress = p.z;
     m_nLastRawX = nRawX;
     m_nLastRawY = nRawY;
     m_nLastRawPress = nRawPress;
     m_bLastTouched = true;
-    bValid = true;}
-  else {
+    bValid = true;
+  } else {
     if (!m_bLastTouched) {
       // Wasn't touched before; do nothing
     } else {
@@ -1083,6 +1127,77 @@ bool gslc_TDrvGetTouch(gslc_tsGui* pGui,int16_t* pnX, int16_t* pnY, uint16_t* pn
     }
   }
 
+  // ----------------------------------------------------------------
+  #elif defined(DRV_TOUCH_XPT2046)
+
+    uint16_t  nRawX,nRawY; //XPT2046 returns values up to 4095
+    uint16_t  nRawPress;   //XPT2046 returns values up to 4095
+
+    TS_Point p = m_touch.getPoint();
+
+    #if defined(ADATOUCH_PRESS_MIN)
+    if (p.z > ADATOUCH_PRESS_MIN) {
+    #else
+    if (p.z > 0) {
+    #endif
+      nRawX = p.x;
+      nRawY = p.y;
+      nRawPress = p.z;
+      m_nLastRawX = nRawX;
+      m_nLastRawY = nRawY;
+      m_nLastRawPress = nRawPress;
+      m_bLastTouched = true;
+      bValid = true;
+    }
+    else {
+      if (!m_bLastTouched) {
+        // Wasn't touched before; do nothing
+      }
+      else {
+        // Touch release
+        // Indicate old coordinate but with pressure=0
+        m_nLastRawPress = 0;
+        m_bLastTouched = false;
+        bValid = true;
+      }
+    }
+
+  // ----------------------------------------------------------------
+  #elif defined(DRV_TOUCH_HANDLER)
+
+    uint16_t  nRawX,nRawY;
+    uint16_t  nRawPress; 
+  
+    TouchHandler *pTH = gslc_getTouchHandler();
+    THPoint p(0,0,0);
+    //if no TouchHandler was defined use (0,0,0)
+    if (pTH!=NULL)
+        p = pTH->getPoint();
+    
+    if (p.z > 0) {
+      nRawX=p.x;
+      nRawY=p.y;
+	  nRawPress=p.z;
+      m_nLastRawX = nRawX;
+      m_nLastRawY = nRawY;
+      m_nLastRawPress = nRawPress;
+      m_bLastTouched = true;
+      bValid = true;
+      //Serial.print("pTH= ");Serial.print(p.x);Serial.print(" ");Serial.print(p.y);Serial.print(" ");Serial.println(p.z);
+    }
+    else {
+      if (!m_bLastTouched) {
+        // Wasn't touched before; do nothing
+      } else {
+        // Touch release
+        // Indicate old coordinate but with pressure=0
+        m_nLastRawPress = 0;
+        m_bLastTouched = false;
+        bValid = true;
+      }
+    }
+
+  // ----------------------------------------------------------------
   #endif // DRV_TOUCH_*
 
 
@@ -1113,7 +1228,7 @@ bool gslc_TDrvGetTouch(gslc_tsGui* pGui,int16_t* pnX, int16_t* pnY, uint16_t* pn
 
 
     // For resistive displays, perform constraint and scaling
-    #if defined(DRV_TOUCH_ADA_STMPE610) || defined(DRV_TOUCH_ADA_SIMPLE)
+    #if defined(DRV_TOUCH_ADA_STMPE610) || defined(DRV_TOUCH_ADA_SIMPLE) || defined(DRV_TOUCH_XPT2046)
       // Perform constraining to input boundaries
       nInputX = constrain(nInputX,ADATOUCH_X_MIN,ADATOUCH_X_MAX);
       nInputY = constrain(nInputY,ADATOUCH_Y_MIN,ADATOUCH_Y_MAX);
@@ -1145,6 +1260,10 @@ bool gslc_TDrvGetTouch(gslc_tsGui* pGui,int16_t* pnX, int16_t* pnY, uint16_t* pn
         m_nLastRawPress,m_nLastRawX,m_nLastRawY,nOutputX,nOutputY);
     #endif
 
+    // Debug output
+    //Serial.print("p: ");Serial.print(nOutputX);Serial.print(",");Serial.print(nOutputY);Serial.print(",");Serial.println(m_nLastRawPress);
+    //Serial.print("nDispOutMaxX: ");Serial.println(nDispOutMaxX);
+    //Serial.print("nDispOutMaxY: ");Serial.println(nDispOutMaxY);
 
     // Return with indication of new value
     return true;
