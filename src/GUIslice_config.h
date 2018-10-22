@@ -36,7 +36,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
-
+#define ESP_IDF
 // -----------------------------------------------------------------------------------------
 
 // Import user configuration depending on device type
@@ -46,6 +46,8 @@ extern "C" {
   #include "GUIslice_config_ard.h"
 #elif defined(ESP8266) || defined(ESP32)
   #include "GUIslice_config_ard.h"
+#elif defined(ESP_IDF)
+#include "GUIslice_config_esp.h"
 #elif defined(NRF52)
   #include "GUIslice_config_ard.h"
 #elif defined(ARDUINO_STM32_FEATHER) || defined(__STM32F1__)
