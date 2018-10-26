@@ -659,7 +659,8 @@ bool gslc_ElemXGaugeDrawRamp(gslc_tsGui* pGui,gslc_tsElemRef* pElemRef,gslc_teRe
 
     if (nSteps == 0) {
       nColInd = nX*1000/nElemW;
-      nCol = gslc_ColorBlend3(GSLC_COL_GREEN,GSLC_COL_YELLOW,GSLC_COL_RED,500,nColInd);
+      //nCol = gslc_ColorBlend3(GSLC_COL_GREEN,GSLC_COL_YELLOW,GSLC_COL_RED,500,nColInd);
+      nCol = gslc_ColorBlend3(pElem->colElemFrame,pElem->colElemFill,pElem->colElemFillGlow,500,nColInd);
     } else {
       uint16_t  nBlockLen,nSegLen,nSegInd,nSegOffset,nSegStart;
       nBlockLen = (nElemW-(nSteps-1)*nGap)/nSteps;
@@ -672,11 +673,13 @@ bool gslc_ElemXGaugeDrawRamp(gslc_tsGui* pGui,gslc_tsElemRef* pElemRef,gslc_teRe
         // Inside block
         nColInd = nSegStart*1000/nElemW;
         nCol = gslc_ColorBlend3(GSLC_COL_GREEN,GSLC_COL_YELLOW,GSLC_COL_RED,500,nColInd);
+        nCol = gslc_ColorBlend3(pElem->colElemFrame,pElem->colElemFill,pElem->colElemFillGlow,500,nColInd);
 
       } else {
         // Inside gap
         // - No draw
         nCol = pElem->colElemFill;
+        nCol = pElem->colElemText;
       }
 
     }
