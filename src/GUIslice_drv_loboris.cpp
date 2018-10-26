@@ -534,7 +534,7 @@ bool gslc_DrvGetTxtSize(gslc_tsGui* pGui,gslc_tsFont* pFont,const char* pStr,gsl
 	}
 
   //TODO m_disp.setTextSize(nTxtScale);
-  nTxtLen = TFT_getStringWidth((char*)pStr);
+  nTxtLen = TFT_getStringWidth((char*)pStr);  
 	nTxtHeight = TFT_getfontheight();//  m_disp.fontHeight(1); // Use freefont "textfont" value
   *pnTxtX = 0;  // Unused
   *pnTxtY = 0;  // Unused
@@ -579,13 +579,13 @@ bool gslc_DrvDrawTxtAlign(gslc_tsGui* pGui,int16_t nX0,int16_t nY0,int16_t nX1,i
 	int nDatumX = 0;
 	int nDatumY = 0;
 	switch (eTxtAlign) {
-	case GSLC_ALIGN_TOP_LEFT:   nDatumX = 0; nDatumY=0; break;
+	case GSLC_ALIGN_TOP_LEFT:   nDatumX = 1; nDatumY=0; break;
 	case GSLC_ALIGN_TOP_MID:    nDatumX = CENTER; nDatumY = 0; break;
 	case GSLC_ALIGN_TOP_RIGHT:  nDatumX = RIGHT; nDatumY = 0; break;
-	case GSLC_ALIGN_MID_LEFT:  nDatumX = 0; nDatumY = CENTER; break;
+	case GSLC_ALIGN_MID_LEFT:  nDatumX = 1; nDatumY = CENTER; break;
 	case GSLC_ALIGN_MID_MID:   nDatumX = CENTER; nDatumY = CENTER; break;
 	case GSLC_ALIGN_MID_RIGHT: nDatumX = RIGHT; nDatumY = CENTER; break;
-	case GSLC_ALIGN_BOT_LEFT:  nDatumX = 0; nDatumY = BOTTOM; break;
+	case GSLC_ALIGN_BOT_LEFT:  nDatumX = 1; nDatumY = BOTTOM; break;
 	case GSLC_ALIGN_BOT_MID:   nDatumX = CENTER; nDatumY = BOTTOM; break;
 	case GSLC_ALIGN_BOT_RIGHT:  nDatumX = RIGHT; nDatumY = BOTTOM; break;
 	default:                    nDatumX = CENTER; nDatumY = CENTER; break;
