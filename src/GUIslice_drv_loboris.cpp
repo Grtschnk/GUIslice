@@ -290,42 +290,7 @@ extern "C" {
 		TFT_setFont(DEFAULT_FONT, NULL);
 		TFT_resetclipwin();
 
-#ifdef CONFIG_EXAMPLE_USE_WIFI
 
-		ESP_ERROR_CHECK(nvs_flash_init());
-
-		// ===== Set time zone ======
-		setenv("TZ", "CET-1CEST", 0);
-		tzset();
-		// ==========================
-
-		disp_header("GET NTP TIME");
-
-		time(&time_now);
-		tm_info = localtime(&time_now);
-
-		// Is time set? If not, tm_year will be (1970 - 1900).
-		if(tm_info->tm_year < (2016 - 1900)) {
-			ESP_LOGI(tag, "Time is not set yet. Connecting to WiFi and getting time over NTP.");
-			_fg = TFT_CYAN;
-			TFT_print("Time is not set yet", CENTER, CENTER);
-			TFT_print("Connecting to WiFi", CENTER, LASTY + TFT_getfontheight() + 2);
-			TFT_print("Getting time over NTP", CENTER, LASTY + TFT_getfontheight() + 2);
-			_fg = TFT_YELLOW;
-			TFT_print("Wait", CENTER, LASTY + TFT_getfontheight() + 2);
-			if (obtain_time()) {
-				_fg = TFT_GREEN;
-				TFT_print("System time is set.", CENTER, LASTY);
-			}
-			else {
-				_fg = TFT_RED;
-				TFT_print("ERROR.", CENTER, LASTY);
-			}
-			time(&time_now);
-			update_header(NULL, "");
-			Wait(-2000);
-		}
-#endif
 
 		//	disp_header("File system INIT");
 		//	_fg = TFT_CYAN;
